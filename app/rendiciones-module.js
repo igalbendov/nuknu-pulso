@@ -17,7 +17,7 @@ function Nueva({ user, onDone }) {
   const upd = (k, v) => { if (st === "success") setSt("idle"); setF((p) => ({ ...p, [k]: v })); };
   async function submit() {
     setErr("");
-    if (!f.fecha || !f.monto || !f.cat || !f.mp || !f.desc.trim()) { setErr("Completá los campos obligatorios."); return; }
+    if (!f.fecha || !f.monto || !f.cat || !f.mp || !f.desc.trim()) { setErr("Complete los campos obligatorios."); return; }
     setSt("loading");
     try {
       let fd = null, fn = null, fm = null;

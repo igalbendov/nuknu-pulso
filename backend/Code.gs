@@ -71,6 +71,8 @@ function doPost(e) {
     if (a === "listRendiciones") return json_({ ok: true, rendiciones: listRendiciones_(d.nombre, d.isAdmin) });
     if (a === "submitRend")      return submitRend_(d);
     if (a === "updateRendStatus")return updateRendStatus_(d);
+    if (a === "listProfiles")    return json_({ ok: true, profiles: listProfiles_() });
+    if (a === "saveProfile")     return saveProfile_(d);
     return json_({ ok: false, error: "Acción desconocida: " + a });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
@@ -124,7 +126,7 @@ function listMinutas_(nombre, isAdmin) {
   return all.filter(function (m) {
     return admin || String(m.autor).toLowerCase() === (nombre || "").toLowerCase();
   }).map(function (m) {
-    return { id: m.id, autor: m.autor, fecha: m.fecha, titulo: m.titulo, resumen: m.resumen, acciones: Number(m.acciones) || 0 };
+    return { id: m.id, autor: m.autor, fecha: m.fecha, titulo: m.titulo, resumen: m.resumen, acciones: Number(m.acciones) || 0, contenido: m.contenido || "" };
   });
 }
 // ReuNote llamará a esto para guardar cada minuta.
@@ -132,6 +134,36 @@ function saveMinuta_(d) {
   var id = "m" + new Date().getTime();
   minutasSheet_().appendRow([id, d.autor, d.fecha || new Date().toISOString().slice(0,10), d.titulo || "Minuta", d.resumen || "", d.acciones || 0, d.contenido || ""]);
   return { id: id };
+}
+
+// ── Perfiles del equipo (nombre, cargo, tienda, cumpleaños) ──
+function profSheet_() { return sheet_("Perfiles", ["nombre", "nombreCompleto", "cargo", "tienda", "fechaNac", "email", "actualizado"]); }
+function bday_(v) {
+  if (v instanceof Date) return ("0" + (v.getMonth() + 1)).slice(-2) + "-" + ("0" + v.getDate()).slice(-2);
+  var s = String(v || "").trim();
+  var m = s.match(/(\d{4})-(\d{2})-(\d{2})/); if (m) return m[2] + "-" + m[3];
+  return s;
+}
+function listProfiles_() {
+  return rows_(profSheet_()).map(function (p) {
+    return { nombre: p.nombre, nombreCompleto: p.nombreCompleto, cargo: p.cargo, tienda: p.tienda, fechaNac: bday_(p.fechaNac), email: p.email };
+  });
+}
+function saveProfile_(d) {
+  if (!d.nombre) return json_({ ok: false, error: "Falta el nombre." });
+  var sh = profSheet_(), data = sh.getDataRange().getValues(), head = data[0], iN = head.indexOf("nombre");
+  var fila = [d.nombre, d.nombreCompleto || "", d.cargo || "", d.tienda || "", d.fechaNac || "", d.email || "", new Date()];
+  for (var r = 1; r < data.length; r++) {
+    if (String(data[r][iN]).toLowerCase() === String(d.nombre).toLowerCase()) {
+      sh.getRange(r + 1, 1, 1, fila.length).setValues([fila]);
+      sh.getRange(r + 1, head.indexOf("fechaNac") + 1).setNumberFormat("@"); // fecha como texto
+      return json_({ ok: true });
+    }
+  }
+  sh.appendRow(fila);
+  var last = sh.getLastRow();
+  sh.getRange(last, head.indexOf("fechaNac") + 1).setNumberFormat("@");
+  return json_({ ok: true });
 }
 
 // ── Rendiciones (privadas por autor; admin ve todo) ─────────

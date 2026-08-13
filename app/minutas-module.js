@@ -14,6 +14,26 @@ function extractActions(text){
     let clean=s.charAt(0).toUpperCase()+s.slice(1); if(clean.length>160) clean=clean.slice(0,160)+"…"; out.push(clean); });
   return out.slice(0,15);
 }
+function slug(s){ return String(s||"minuta").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,50)||"minuta"; }
+function dl(name, content, mime){
+  const blob=new Blob([content],{type:mime+";charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},100);
+}
+function toHtml(txt){
+  return String(txt||"").replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))
+    .replace(/^# (.*)$/gm,"<h1>$1</h1>").replace(/^## (.*)$/gm,"<h2>$1</h2>")
+    .replace(/^- \[ \] (.*)$/gm,"<p>&#9744; $1</p>").replace(/^- (.*)$/gm,"<li>$1</li>")
+    .replace(/\n/g,"<br>");
+}
+function downloadWord(titulo, contenido){
+  const doc='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;color:#1a1a1a;line-height:1.5}h1{font-size:20pt;color:#1c1a16}h2{font-size:14pt;color:#8C4A2B;border-bottom:1px solid #ccc}</style></head><body>'+toHtml(contenido)+'</body></html>';
+  dl(slug(titulo)+".doc","﻿"+doc,"application/msword");
+}
+function copyText(t, cb){
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(cb,cb); }
+  else { const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} ta.remove(); cb(); }
+}
 function pickMime(){
   if (typeof MediaRecorder === "undefined") return "";
   const opts=["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/aac","audio/ogg"];
@@ -95,7 +115,7 @@ function Recorder({ user, onSaved }) {
     try{
       const stream=await navigator.mediaDevices.getUserMedia({audio:true});
       streamRef.current=stream;
-    }catch(e){ setErr("No se pudo acceder al micrófono. Dale permiso al navegador."); return; }
+    }catch(e){ setErr("No se pudo acceder al micrófono. Otorgue el permiso al navegador."); return; }
     onRef.current=true; setRec(true); startRef.current=Date.now();
     startChunk(pickMime());
   }
@@ -109,19 +129,21 @@ function Recorder({ user, onSaved }) {
 
   const shownMs = elapsedRef.current + (rec ? now-startRef.current : 0);
 
-  function generar(){
+  function buildText(){
     const acts=extractActions(text);
     const L=[]; L.push("# "+(titulo.trim()||"Minuta"));
-    L.push(""); L.push("## Resumen"); L.push(text? text.slice(0,600)+(text.length>600?"…":"") : "(sin transcripción)");
+    L.push("Fecha: "+new Date().toLocaleDateString("es-CL")+"  ·  Autor: "+user.nombre);
+    L.push(""); L.push("## Resumen"); L.push(text? text.slice(0,800)+(text.length>800?"…":"") : "(sin transcripción)");
     L.push(""); L.push("## Acciones"); if(acts.length) acts.forEach(a=>L.push("- [ ] "+a)); else L.push("(no se detectaron acciones)");
-    L.push(""); L.push("## Transcripción"); L.push(text||"(vacío)");
-    setPreview(L.join("\n"));
+    L.push(""); L.push("## Transcripción completa"); L.push(text||"(vacío)");
+    return L.join("\n");
   }
+  function generar(){ setPreview(buildText()); }
   async function guardar(){
     const acts=extractActions(text);
     setSaveSt("loading");
     try{
-      await api.saveMinuta({autor:user.nombre,fecha:new Date().toISOString().slice(0,10),titulo:titulo.trim()||"Minuta",resumen:text.slice(0,220),acciones:acts.length});
+      await api.saveMinuta({autor:user.nombre,fecha:new Date().toISOString().slice(0,10),titulo:titulo.trim()||"Minuta",resumen:text.slice(0,220),acciones:acts.length,contenido:buildText()});
       setSaveSt("done"); onSaved(); setTimeout(()=>setSaveSt("idle"),2500);
     }catch(e){ setSaveSt("idle"); setErr("No se pudo guardar la minuta."); }
   }
@@ -129,7 +151,7 @@ function Recorder({ user, onSaved }) {
 
   return (
     <div className="card">
-      {!supported && <div className="toast-warn">Este navegador no permite grabar audio. Probá con una versión más nueva; igual podés escribir la minuta y guardarla.</div>}
+      {!supported && <div className="toast-warn">Este navegador no permite grabar audio. Actualice a una versión más reciente; de todos modos puede escribir la minuta y guardarla.</div>}
       <label className="f">Título de la reunión</label>
       <input placeholder="Ej: Planificación semanal" value={titulo} onChange={(e)=>setTitulo(e.target.value)} style={{marginBottom:14}} />
       <div className="rec-bar">
@@ -139,9 +161,9 @@ function Recorder({ user, onSaved }) {
         <span className="rec-status">{rec?"Grabando…":"Detenido"} <span className="timer">{fmt(shownMs)}</span>{pending>0 && " · transcribiendo…"}</span>
       </div>
       <div className="transcript">
-        {!text && !rec && <span className="rec-status">Grabá tu reunión desde cualquier dispositivo. El audio se transcribe solo cada pocos segundos.</span>}
+        {!text && !rec && <span className="rec-status">Grabe su reunión desde cualquier dispositivo. El audio se transcribe automáticamente cada pocos segundos.</span>}
         {text && <div>{text}</div>}
-        {rec && !text && <span className="rec-status interim">Escuchando… la transcripción aparece a medida que hablás.</span>}
+        {rec && !text && <span className="rec-status interim">Escuchando… la transcripción aparece a medida que habla.</span>}
       </div>
       {err && <div className="ferr" style={{textAlign:"left"}}>{err}</div>}
       <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
@@ -154,6 +176,35 @@ function Recorder({ user, onSaved }) {
   );
 }
 
+function MinutaRow({ m, admin }) {
+  const [open,setOpen]=useState(false);
+  const [copied,setCopied]=useState(false);
+  const contenido = m.contenido && m.contenido.trim()
+    ? m.contenido
+    : ("# "+(m.titulo||"Minuta")+"\n\nFecha: "+(m.fecha||"")+"  ·  Autor: "+(m.autor||"")+"\n\n## Resumen\n"+(m.resumen||"(sin contenido guardado)"));
+  return (
+    <div className="row-item" style={{flexDirection:"column",alignItems:"stretch"}}>
+      <div style={{display:"flex",alignItems:"flex-start",gap:12,cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
+        <div className="ri-icon">✎</div>
+        <div className="ri-body">
+          <div className="ri-title">{m.titulo}</div>
+          <div className="ri-meta">{admin && <b style={{color:"var(--ink)"}}>{m.autor} · </b>}{m.fecha}{m.acciones?` · ${m.acciones} acciones`:""}</div>
+          {!open && m.resumen && <div className="ri-sub">{m.resumen}</div>}
+        </div>
+        <span className="ri-meta" style={{flex:"none"}}>{open?"▲":"▼"}</span>
+      </div>
+      {open && <>
+        <div className="min-preview" style={{marginTop:12}}>{contenido}</div>
+        <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+          <button className="btn btn-sm" onClick={()=>copyText(contenido,()=>{setCopied(true);setTimeout(()=>setCopied(false),1500);})}>{copied?"✓ Copiado":"Copiar"}</button>
+          <button className="btn btn-sm" onClick={()=>downloadWord(m.titulo,contenido)}>Descargar Word</button>
+          <button className="btn btn-sm" onClick={()=>dl(slug(m.titulo)+".txt",contenido,"text/plain")}>Descargar .txt</button>
+        </div>
+      </>}
+    </div>
+  );
+}
+
 function MisMinutas({ user, admin, refreshKey }) {
   const [list,setList]=useState(null);
   useEffect(()=>{ api.listMinutas(user.nombre,admin).then(setList); },[user,admin,refreshKey]);
@@ -162,16 +213,7 @@ function MisMinutas({ user, admin, refreshKey }) {
       <div className="sec-hdr"><h2>{admin?"Minutas del equipo":"Mis minutas"}</h2></div>
       {list===null ? <div className="loading">Cargando…</div> :
         list.length===0 ? <div className="empty">Aún no hay minutas guardadas.</div> :
-        list.map((m)=>(
-          <div className="row-item" key={m.id}>
-            <div className="ri-icon">✎</div>
-            <div className="ri-body">
-              <div className="ri-title">{m.titulo}</div>
-              <div className="ri-meta">{admin && <b style={{color:"var(--ink)"}}>{m.autor} · </b>}{m.fecha}{m.acciones?` · ${m.acciones} acciones`:""}</div>
-              {m.resumen && <div className="ri-sub">{m.resumen}</div>}
-            </div>
-          </div>
-        ))}
+        list.map((m)=><MinutaRow key={m.id} m={m} admin={admin} />)}
     </>
   );
 }
