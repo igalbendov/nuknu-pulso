@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NUKNU — Rendiciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --terra:#B5623A; --terra-dark:#8C4A2B; --terra-light:#F2E8E0;
+    --cream:#F7F2EB; --cream-dark:#EDE5D8; --ink:#2C2926; --ink-mid:#6B5F57; --ink-light:#A59B94;
+    --border:rgba(44,41,38,.12); --border-strong:rgba(44,41,38,.2);
+    --ok-bg:#EAF2E5; --ok:#3B6D11; --dang-bg:#FCEAEA; --dang:#A32D2D; --warn-bg:#FEF3E2; --warn:#8A5A00;
+    --radius:12px; --radius-sm:8px; --shadow:0 1px 3px rgba(44,41,38,.08),0 4px 16px rgba(44,41,38,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .logo{font-family:'Cormorant Garamond',serif;font-size:26px;letter-spacing:.3em;color:var(--terra);text-transform:uppercase;}
+  .logo-sm{font-family:'Cormorant Garamond',serif;font-size:18px;letter-spacing:.25em;color:var(--terra);}
+  .logo-sm .sub{font-family:'DM Sans';font-size:10px;letter-spacing:.06em;color:var(--ink-light);margin-left:8px;}
+  .tagline{font-size:12px;color:var(--ink-light);letter-spacing:.05em;margin-top:5px;text-transform:uppercase;text-align:center;}
+  .screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:4rem 1.25rem;}
+  .app-wrap{max-width:760px;margin:0 auto;padding:0 1.25rem 4rem;}
+  .card{background:#fff;border:.5px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow);}
+  .card-sm{width:100%;max-width:400px;margin-top:1.5rem;}
+  .card-title{font-size:14px;font-weight:600;margin-bottom:6px;}
+  .card-sub{font-size:13px;color:var(--ink-mid);margin-bottom:16px;}
+  .fg{display:flex;flex-direction:column;gap:5px;}.fg+.fg{margin-top:14px;}
+  .lbl{font-size:12px;color:var(--ink-mid);}.lbl em{font-style:normal;opacity:.6;}
+  .inp{width:100%;padding:10px 13px;font-size:14px;font-family:'DM Sans';background:#fff;color:var(--ink);border:.5px solid var(--border-strong);border-radius:var(--radius-sm);outline:none;}
+  .inp:focus{border-color:var(--terra);box-shadow:0 0 0 3px rgba(181,98,58,.1);}
+  input[type=password].inp{letter-spacing:.3em;}
+  textarea.inp{resize:vertical;min-height:70px;letter-spacing:normal;}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.full{grid-column:1/-1;}
+  @media(max-width:560px){.fgrid{grid-template-columns:1fr;}}
+  .btn{cursor:pointer;font-family:'DM Sans';font-weight:600;border-radius:var(--radius-sm);padding:11px 22px;font-size:14px;border:.5px solid var(--border-strong);background:#fff;color:var(--ink);}
+  .btn-primary{background:var(--terra);color:#fff;border:none;}.btn-primary:hover{background:var(--terra-dark);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+  .btn.full{width:100%;margin-top:16px;}
+  .btn-link{background:none;border:none;color:var(--ink-mid);font-size:13px;cursor:pointer;font-family:'DM Sans';width:100%;margin-top:12px;}
+  .btn-approve{background:none;border:.5px solid #93C97A;color:var(--ok);padding:5px 12px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:'DM Sans';}
+  .btn-reject{background:none;border:.5px solid #E8A5A5;color:var(--dang);padding:5px 12px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:'DM Sans';}
+  .app-hdr{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 0 1rem;border-bottom:.5px solid var(--border);margin-bottom:1.5rem;}
+  .hdr-right{display:flex;align-items:center;gap:10px;}
+  .nav{display:flex;gap:3px;}
+  .nav-btn{background:none;border:.5px solid transparent;padding:6px 13px;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;color:var(--ink-mid);font-family:'DM Sans';}
+  .nav-btn:hover{background:var(--cream-dark);}.nav-btn.active{background:var(--terra);color:#fff;}
+  .user-pill{display:flex;align-items:center;gap:7px;background:none;border:.5px solid var(--border-strong);border-radius:20px;padding:5px 13px 5px 6px;cursor:pointer;font-family:'DM Sans';color:var(--ink);font-size:13px;}
+  .u-av{width:24px;height:24px;border-radius:50%;background:var(--terra-light);color:var(--terra);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+  .sec-title{font-size:11px;font-weight:600;color:var(--ink-light);letter-spacing:.12em;text-transform:uppercase;margin-bottom:1rem;}
+  .dz{display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px dashed var(--border-strong);border-radius:var(--radius-sm);padding:1.3rem;cursor:pointer;background:var(--cream);gap:5px;text-align:center;}
+  .dz:hover{border-color:var(--terra);}.dz-text{font-size:13px;color:var(--ink-mid);}.dz-sub{font-size:12px;color:var(--ink-light);}
+  .form-footer{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:1.25rem;padding-top:1.25rem;border-top:.5px solid var(--border);flex-wrap:wrap;}
+  .toast{background:var(--ok-bg);color:var(--ok);border:.5px solid #93C97A;border-radius:var(--radius-sm);padding:13px 16px;font-size:13px;margin-bottom:1.25rem;}
+  .toast-warn{background:var(--warn-bg);color:var(--warn);border:.5px solid #F0C060;border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;margin-bottom:1.25rem;}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;}
+  @media(max-width:560px){.stats-row{grid-template-columns:1fr 1fr;}}
+  .stat{background:#fff;border:.5px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow);}
+  .stat-lbl{font-size:11px;color:var(--ink-light);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;}
+  .stat-val{font-size:22px;font-weight:500;line-height:1;}.terra{color:var(--terra);}
+  .fbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;}
+  .chip{background:none;border:.5px solid var(--border-strong);border-radius:20px;padding:4px 14px;font-size:12px;cursor:pointer;color:var(--ink-mid);font-family:'DM Sans';}
+  .chip.chip-on{background:var(--terra);color:#fff;}
+  .search-inp{flex:1;min-width:150px;border:.5px solid var(--border-strong);border-radius:20px;padding:5px 14px;font-size:13px;font-family:'DM Sans';outline:none;}
+  .exp-item{background:#fff;border:.5px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;display:grid;grid-template-columns:38px 1fr auto;gap:12px;align-items:flex-start;margin-bottom:8px;box-shadow:var(--shadow);}
+  .exp-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;margin-top:1px;}
+  .exp-desc{font-size:14px;}.exp-name{font-weight:600;}
+  .exp-meta{font-size:11px;color:var(--ink-mid);margin-top:3px;}
+  .exp-link{display:inline-block;font-size:11px;color:var(--terra);margin-top:5px;text-decoration:none;}.exp-link:hover{text-decoration:underline;}
+  .exp-comment{font-size:12px;color:var(--ink-mid);font-style:italic;margin-top:5px;background:var(--cream);padding:4px 9px;border-radius:4px;display:inline-block;}
+  .exp-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;}
+  .exp-amount{font-size:15px;font-weight:600;white-space:nowrap;}
+  .exp-actions{display:flex;gap:6px;}
+  .badge{display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge-p{background:var(--warn-bg);color:var(--warn);}.badge-a{background:var(--ok-bg);color:var(--ok);}.badge-r{background:var(--dang-bg);color:var(--dang);}
+  .empty{text-align:center;padding:3rem 0;color:var(--ink-light);font-size:14px;}
+  .err{font-size:12px;color:var(--dang);margin-top:8px;text-align:center;}
+  .loading{text-align:center;padding:2rem;color:var(--ink-light);font-size:13px;}
+  .demo-note{font-size:11px;color:var(--ink-light);text-align:center;margin-top:16px;border-top:.5px solid var(--border);padding-top:12px;}
+  @media(max-width:560px){.exp-item{grid-template-columns:34px 1fr;}.exp-right{grid-column:1/-1;flex-direction:row;justify-content:space-between;padding-top:8px;border-top:.5px solid var(--border);margin-top:4px;}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+// ── CONFIG ──────────────────────────────────────────────
+// Pega aquí la MISMA URL /exec del backend NUKNU que usás en Pulso.
+// Si la dejás vacía, la app funciona en MODO DEMO (datos en este dispositivo).
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbw7ZI_CILopf0NHxNtJTlYsaekvT-mczb1l-PLKxrI-r5zFp4Xzk53LScuuO8s1yHH0/exec";
+const ADMIN_NAMES = ["Igal"];               // solo para el modo demo
+const LS_SESSION  = "nuknu-session-v1";      // misma sesión que Pulso si se hostea junto
+const DEMO = !BACKEND_URL;
+
+const CATS = ["Marketing","Insumos / Materiales","Transporte","Alimentación","Arriendo / Servicios","Otros"];
+const MEDIOS = ["Tarjeta crédito","Tarjeta débito","Transferencia","Efectivo"];
+const CAT_UI = {
+  "Marketing":{icon:"🎯",bg:"#EDE8F5"}, "Insumos / Materiales":{icon:"📦",bg:"#F5EDE3"},
+  "Transporte":{icon:"🚗",bg:"#E1EEF8"}, "Alimentación":{icon:"🍽",bg:"#E8F2E4"},
+  "Arriendo / Servicios":{icon:"🏢",bg:"#F5E8E3"}, "Otros":{icon:"📎",bg:"#EDEDED"}
+};
+const clp = n => "$" + Math.round(Number(n)||0).toLocaleString("es-CL");
+const todayS = () => new Date().toISOString().split("T")[0];
+const fmtDate = d => { if(!d)return""; const s=String(d).split("T")[0]; if(!s.includes("-"))return String(d); const[y,m,dd]=s.split("-"); return `${dd}/${m}/${y}`; };
+const stor = { get:k=>{try{return localStorage.getItem(k)}catch{return null}}, set:(k,v)=>{try{localStorage.setItem(k,v)}catch{}} };
+const isAdminName = n => ADMIN_NAMES.map(x=>x.toLowerCase()).includes(String(n).toLowerCase());
+const toB64 = f => new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(f);});
+
+// ── API (backend real o demo local) ─────────────────────
+async function call(action, payload={}) {
+  const r = await fetch(BACKEND_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action,...payload}),redirect:"follow"});
+  const t = await r.text(); try{return JSON.parse(t)}catch{throw new Error("Respuesta inválida del servidor")}
+}
+function demoHash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return"d"+h.toString(16);}
+const D_USERS="nuknu-users-v1", D_REND="nuknu-rend-v1";
+const dread=(k,f)=>{try{const r=localStorage.getItem(k);return r?JSON.parse(r):f}catch{return f}};
+const dwrite=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+
+const API = {
+  async userExists(nombre){
+    if(DEMO){return !!dread(D_USERS,{})[nombre.trim().toLowerCase()];}
+    const r=await call("userExists",{nombre:nombre.trim()});return !!r.exists;
+  },
+  async register(nombre,pin){
+    if(DEMO){const u=dread(D_USERS,{});if(u[nombre.trim().toLowerCase()])throw new Error("Ese nombre ya tiene PIN.");u[nombre.trim().toLowerCase()]={nombre:nombre.trim(),pin:demoHash(pin)};dwrite(D_USERS,u);return{nombre:nombre.trim()};}
+    const r=await call("register",{nombre:nombre.trim(),pin});if(!r.ok)throw new Error(r.error);return{nombre:nombre.trim()};
+  },
+  async login(nombre,pin){
+    if(DEMO){const u=dread(D_USERS,{})[nombre.trim().toLowerCase()];if(!u)throw new Error("No existe ese nombre.");if(u.pin!==demoHash(pin))throw new Error("PIN incorrecto.");return{nombre:u.nombre,isAdmin:isAdminName(u.nombre)};}
+    const r=await call("login",{nombre:nombre.trim(),pin});if(!r.ok)throw new Error(r.error);return{nombre:r.nombre,isAdmin:!!r.isAdmin};
+  },
+  async list(nombre,isAdmin){
+    if(DEMO){const all=dread(D_REND,[]);return isAdmin?all:all.filter(e=>String(e.autor).toLowerCase()===nombre.toLowerCase());}
+    const r=await call("listRendiciones",{nombre,isAdmin});return r.rendiciones||[];
+  },
+  async submit(d){
+    if(DEMO){const all=dread(D_REND,[]);const item={id:"r"+Date.now(),autor:d.autor,fecha:d.fechaGasto,monto:Number(d.monto)||0,categoria:d.categoria,estado:"Pendiente",desc:d.descripcion,medioPago:d.medioPago,numDoc:d.numDoc,fileUrl:"",comentario:""};all.push(item);dwrite(D_REND,all);return{ok:true};}
+    return call("submitRend",d);
+  },
+  async update(id,estado,comentario){
+    if(DEMO){const all=dread(D_REND,[]).map(e=>e.id===id?{...e,estado,comentario}:e);dwrite(D_REND,all);return{ok:true};}
+    return call("updateRendStatus",{id,estado,comentario});
+  }
+};
+
+// ── LOGIN POR PIN ───────────────────────────────────────
+function Login({onLogin}){
+  const [step,setStep]=useState("name"),[nombre,setNombre]=useState(""),[pin,setPin]=useState(""),[pin2,setPin2]=useState(""),[err,setErr]=useState(""),[busy,setBusy]=useState(false);
+  const cont=async()=>{setErr("");if(nombre.trim().length<2){setErr("Escribí tu nombre.");return;}setBusy(true);try{const e=await API.userExists(nombre);setStep(e?"login":"create");}catch(e){setErr(e.message);}setBusy(false);};
+  const entrar=async()=>{setErr("");if(!/^\d{4,6}$/.test(pin)){setErr("El PIN son 4 a 6 números.");return;}setBusy(true);try{const u=await API.login(nombre,pin);onLogin(u);}catch(e){setErr(e.message);setBusy(false);}};
+  const crear=async()=>{setErr("");if(!/^\d{4,6}$/.test(pin)){setErr("El PIN son 4 a 6 números.");return;}if(pin!==pin2){setErr("Los PIN no coinciden.");return;}setBusy(true);try{await API.register(nombre,pin);const u=await API.login(nombre,pin);onLogin(u);}catch(e){setErr(e.message);setBusy(false);}};
+  return (
+    <div className="screen">
+      <div className="logo">NUKNU</div>
+      <p className="tagline">Rendiciones de Gasto</p>
+      <div className="card card-sm">
+        {step==="name"&&<>
+          <p className="card-title">¿Cómo te llamás?</p>
+          <p className="card-sub">Entrá con tu PIN del equipo (el mismo de Pulso).</p>
+          <input className="inp" autoFocus placeholder="Tu nombre" value={nombre} onChange={e=>setNombre(e.target.value)} onKeyDown={e=>e.key==="Enter"&&cont()}/>
+          <button className="btn btn-primary full" onClick={cont} disabled={busy}>{busy?"...":"Continuar →"}</button>
+        </>}
+        {step==="login"&&<>
+          <p className="card-title">Hola, {nombre.trim()} 👋</p>
+          <p className="card-sub">Ingresá tu PIN.</p>
+          <input className="inp" autoFocus type="password" inputMode="numeric" placeholder="••••" value={pin} onChange={e=>setPin(e.target.value)} onKeyDown={e=>e.key==="Enter"&&entrar()}/>
+          <button className="btn btn-primary full" onClick={entrar} disabled={busy}>Entrar</button>
+          <button className="btn-link" onClick={()=>{setStep("name");setPin("");setErr("");}}>← No soy {nombre.trim()}</button>
+        </>}
+        {step==="create"&&<>
+          <p className="card-title">Bienvenido/a, {nombre.trim()} ✨</p>
+          <p className="card-sub">Es tu primera vez. Creá un PIN de 4 a 6 números.</p>
+          <input className="inp" autoFocus type="password" inputMode="numeric" placeholder="Nuevo PIN" value={pin} onChange={e=>setPin(e.target.value)} style={{marginBottom:12}}/>
+          <input className="inp" type="password" inputMode="numeric" placeholder="Repetí el PIN" value={pin2} onChange={e=>setPin2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&crear()}/>
+          <button className="btn btn-primary full" onClick={crear} disabled={busy}>Crear PIN y entrar</button>
+          <button className="btn-link" onClick={()=>{setStep("name");setPin("");setPin2("");setErr("");}}>← Volver</button>
+        </>}
+        {err&&<p className="err">{err}</p>}
+        {DEMO&&<p className="demo-note">Modo demo · conectá el backend NUKNU para compartir con el equipo.</p>}
+      </div>
+    </div>
+  );
+}
+
+// ── TARJETA DE GASTO ────────────────────────────────────
+function ExpCard({exp,isAdmin,onUpdate}){
+  const ui=CAT_UI[exp.categoria]||{icon:"📎",bg:"#EDEDED"};
+  const [showR,setShowR]=useState(false),[cmt,setCmt]=useState("");
+  const badge={Pendiente:"badge-p",Aprobado:"badge-a",Rechazado:"badge-r"}[exp.estado]||"badge-p";
+  return (
+    <div className="exp-item">
+      <div className="exp-icon" style={{background:ui.bg}}>{ui.icon}</div>
+      <div>
+        <div className="exp-desc">{exp.desc||"Sin descripción"}</div>
+        <div className="exp-meta">{isAdmin&&<span className="exp-name">{exp.autor} · </span>}{fmtDate(exp.fecha)} · {exp.categoria}{exp.numDoc&&` · Nº${exp.numDoc}`}{exp.medioPago&&` · ${exp.medioPago}`}</div>
+        {exp.fileUrl&&<a className="exp-link" href={exp.fileUrl} target="_blank" rel="noopener noreferrer">📎 Ver comprobante</a>}
+        {exp.comentario&&<div className="exp-comment">"{exp.comentario}"</div>}
+        {showR&&<div style={{display:"flex",gap:6,marginTop:8}}>
+          <input className="inp" style={{fontSize:12,padding:"6px 10px"}} placeholder="Motivo (opcional)" value={cmt} onChange={e=>setCmt(e.target.value)} autoFocus/>
+          <button className="btn" style={{padding:"4px 9px",fontSize:12}} onClick={()=>setShowR(false)}>✕</button>
+        </div>}
+      </div>
+      <div className="exp-right">
+        <div className="exp-amount">{clp(exp.monto)}</div>
+        {isAdmin&&exp.estado==="Pendiente"?(
+          <div className="exp-actions">
+            <button className="btn-approve" onClick={()=>onUpdate(exp.id,"Aprobado","")}>Aprobar</button>
+            <button className="btn-reject" onClick={()=>{if(!showR){setShowR(true);}else{onUpdate(exp.id,"Rechazado",cmt);setShowR(false);setCmt("");}}}>{showR?"Confirmar":"Rechazar"}</button>
+          </div>
+        ):<span className={"badge "+badge}>{exp.estado||"Pendiente"}</span>}
+      </div>
+    </div>
+  );
+}
+
+// ── NUEVA RENDICIÓN ─────────────────────────────────────
+function Nueva({user,onDone}){
+  const init={fecha:todayS(),monto:"",cat:"",mp:"",num:"",desc:""};
+  const [f,setF]=useState(init),[file,setFile]=useState(null),[st,setSt]=useState("idle"),[err,setErr]=useState("");
+  const upd=(k,v)=>{if(st==="success")setSt("idle");setF(p=>({...p,[k]:v}));};
+  const submit=async()=>{
+    setErr("");if(!f.fecha||!f.monto||!f.cat||!f.mp||!f.desc.trim()){setErr("Completá los campos obligatorios.");return;}
+    setSt("loading");
+    try{
+      let fd=null,fn=null,fm=null; if(file){fd=await toB64(file);fn=file.name;fm=file.type;}
+      const r=await API.submit({autor:user.nombre,fechaGasto:f.fecha,monto:Number(f.monto),categoria:f.cat,medioPago:f.mp,numDoc:f.num,descripcion:f.desc.trim(),fileData:fd,fileName:fn,fileMime:fm});
+      if(r.ok){setF(init);setFile(null);setSt("success");onDone();}else{setErr(r.error||"Error al enviar.");setSt("idle");}
+    }catch(e){setErr("Error: "+e.message);setSt("idle");}
+  };
+  return (
+    <div>
+      <p className="sec-title">Registrar gasto</p>
+      {st==="success"&&<div className="toast">✓ Rendición enviada. Queda pendiente de aprobación. Podés registrar otra.</div>}
+      <div className="card">
+        <div className="fgrid">
+          <div className="fg"><label className="lbl">Fecha del gasto</label><input className="inp" type="date" value={f.fecha} onChange={e=>upd("fecha",e.target.value)}/></div>
+          <div className="fg"><label className="lbl">Monto (CLP)</label><input className="inp" type="number" min="0" placeholder="0" value={f.monto} onChange={e=>upd("monto",e.target.value)}/></div>
+          <div className="fg"><label className="lbl">Categoría</label><select className="inp" value={f.cat} onChange={e=>upd("cat",e.target.value)}><option value="">Seleccionar...</option>{CATS.map(o=><option key={o}>{o}</option>)}</select></div>
+          <div className="fg"><label className="lbl">Medio de pago</label><select className="inp" value={f.mp} onChange={e=>upd("mp",e.target.value)}><option value="">Seleccionar...</option>{MEDIOS.map(o=><option key={o}>{o}</option>)}</select></div>
+          <div className="fg"><label className="lbl">N° Boleta / Factura <em>(opcional)</em></label><input className="inp" placeholder="Ej: 004538" value={f.num} onChange={e=>upd("num",e.target.value)}/></div>
+          <div className="fg full"><label className="lbl">Descripción</label><textarea className="inp" placeholder="¿En qué se gastó? Proveedor, detalle, motivo..." value={f.desc} onChange={e=>upd("desc",e.target.value)}/></div>
+          <div className="fg full"><label className="lbl">Comprobante <em>(recomendado)</em></label>
+            <label className="dz"><input type="file" accept="image/*,.pdf" onChange={e=>setFile(e.target.files[0]||null)} style={{display:"none"}}/>
+              <div className="dz-text">📎 Adjuntar boleta o comprobante</div>
+              <div className="dz-sub">{file?<span style={{color:"var(--terra)",fontWeight:600}}>✓ {file.name}</span>:"JPG, PNG o PDF"}</div>
+            </label>
+          </div>
+        </div>
+        <div className="form-footer">{err&&<p className="err" style={{margin:0}}>{err}</p>}<button className="btn btn-primary" onClick={submit} disabled={st==="loading"}>{st==="loading"?"Enviando...":"Enviar rendición"}</button></div>
+      </div>
+    </div>
+  );
+}
+
+// ── LISTA (mis gastos / revisar) ────────────────────────
+function Lista({user,admin}){
+  const [exps,setExps]=useState(null),[f,setF]=useState(admin?"Pendiente":"todos"),[q,setQ]=useState("");
+  const load=useCallback(async()=>{setExps(null);setExps(await API.list(user.nombre,admin));},[user,admin]);
+  useEffect(()=>{load();},[load]);
+  const update=async(id,estado,cmt)=>{setExps(p=>p.map(e=>e.id===id?{...e,estado,comentario:cmt}:e));try{await API.update(id,estado,cmt);}catch(e){alert("Error: "+e.message);load();}};
+  const tabs=[["todos","Todas"],["Pendiente","Pendientes"],["Aprobado","Aprobadas"],["Rechazado","Rechazadas"]];
+  const list=(exps||[]).filter(e=>f==="todos"||e.estado===f).filter(e=>!q||((e.autor||"")+(e.desc||"")+(e.categoria||"")).toLowerCase().includes(q.toLowerCase()));
+  const pend=(exps||[]).filter(e=>e.estado==="Pendiente").length, apro=(exps||[]).filter(e=>e.estado==="Aprobado").length;
+  const total=(exps||[]).filter(e=>e.estado==="Aprobado").reduce((a,e)=>a+Number(e.monto||0),0);
+  return (
+    <div>
+      {admin&&<div className="stats-row">
+        <div className="stat"><div className="stat-lbl">Total</div><div className="stat-val">{(exps||[]).length}</div></div>
+        <div className="stat"><div className="stat-lbl">Pendientes</div><div className="stat-val terra">{pend}</div></div>
+        <div className="stat"><div className="stat-lbl">Aprobadas</div><div className="stat-val">{apro}</div></div>
+        <div className="stat"><div className="stat-lbl">Monto aprobado</div><div className="stat-val" style={{fontSize:16}}>{clp(total)}</div></div>
+      </div>}
+      <p className="sec-title">{admin?"Revisar rendiciones":"Mis rendiciones"}</p>
+      <div className="fbar">
+        {admin&&<input className="search-inp" placeholder="Buscar nombre o descripción..." value={q} onChange={e=>setQ(e.target.value)}/>}
+        {tabs.map(([v,l])=><button key={v} className={"chip "+(f===v?"chip-on":"")} onClick={()=>setF(v)}>{l}</button>)}
+      </div>
+      {exps===null?<div className="loading">Cargando...</div>:
+        list.length===0?<div className="empty">No hay rendiciones con ese filtro.</div>:
+        list.slice().reverse().map(e=><ExpCard key={e.id} exp={e} isAdmin={admin} onUpdate={update}/>)}
+    </div>
+  );
+}
+
+// ── APP ─────────────────────────────────────────────────
+function Main({user,onLogout}){
+  const [view,setView]=useState("nueva");
+  return (
+    <div className="app-wrap">
+      <div className="app-hdr">
+        <div className="logo-sm">NUKNU <span className="sub">Rendiciones</span></div>
+        <div className="hdr-right">
+          <nav className="nav">
+            <button className={"nav-btn "+(view==="nueva"?"active":"")} onClick={()=>setView("nueva")}>+ Nueva</button>
+            <button className={"nav-btn "+(view==="mias"?"active":"")} onClick={()=>setView("mias")}>Mis gastos</button>
+            {user.isAdmin&&<button className={"nav-btn "+(view==="admin"?"active":"")} onClick={()=>setView("admin")}>Revisar</button>}
+          </nav>
+          <button className="user-pill" onClick={onLogout} title="Cerrar sesión">
+            <span className="u-av">{user.nombre.charAt(0).toUpperCase()}</span>
+            <span>{user.nombre.split(" ")[0]}</span>
+          </button>
+        </div>
+      </div>
+      {DEMO&&<div className="toast-warn">Modo demo · los datos quedan en este dispositivo. Conectá el backend NUKNU para compartir.</div>}
+      {view==="nueva"&&<Nueva user={user} onDone={()=>{}}/>}
+      {view==="mias"&&<Lista user={user} admin={false}/>}
+      {view==="admin"&&user.isAdmin&&<Lista user={user} admin={true}/>}
+    </div>
+  );
+}
+
+function App(){
+  const [user,setUser]=useState(null),[ready,setReady]=useState(false);
+  useEffect(()=>{const s=stor.get(LS_SESSION);if(s){try{setUser(JSON.parse(s))}catch{}}setReady(true);},[]);
+  const login=u=>{stor.set(LS_SESSION,JSON.stringify(u));setUser(u);};
+  const logout=()=>{stor.set(LS_SESSION,"");setUser(null);};
+  if(!ready)return null;
+  return user?<Main user={user} onLogout={logout}/>:<Login onLogin={login}/>;
+}
+ReactDOM.render(<App/>,document.getElementById("root"));
+</script>
+</body>
+</html>
