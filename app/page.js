@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CATEGORIES, BIRTHDAYS, initials, avatarColor, catOf } from "@/lib/seed";
-import { ADMIN_NAMES, DEMO_MODE } from "@/lib/config";
+import { ADMIN_NAMES, DEMO_MODE, APP_VERSION } from "@/lib/config";
 import * as api from "@/lib/api";
 import RendicionesModule from "./rendiciones-module";
 import MinutasModule from "./minutas-module";
@@ -126,16 +126,29 @@ function Muro({ user }) {
 // ═══════════ HUB ═══════════
 function Hub({ user, onLogout }) {
   const [tab, setTab] = useState("muro");
+  const [menu, setMenu] = useState(false);
   const admin = isAdminName(user.nombre);
   const label = { muro: "Muro", rendiciones: "Rendiciones", minutas: "Minutas", equipo: "Equipo" }[tab];
   return (
     <div className="wrap">
       <header className="app">
         <div className="brand"><Mark /><div><h1 className="wordmark">NUKNU</h1><div className="tagsub">Pulso · {label}</div></div></div>
-        <button className="user-pill" onClick={onLogout} title="Cerrar sesión">
-          <span className="u-av">{initials(user.nombre)}</span>
-          <span>{user.nombre.split(" ")[0]}{admin ? " · admin" : ""}</span>
-        </button>
+        <div style={{ position: "relative" }}>
+          <button className="user-pill" onClick={() => setMenu((m) => !m)} title="Menú">
+            <span className="u-av">{initials(user.nombre)}</span>
+            <span>{user.nombre.split(" ")[0]}{admin ? " · admin" : ""}</span>
+            <span style={{ color: "var(--muted)", marginLeft: 2 }}>▾</span>
+          </button>
+          {menu && <>
+            <div className="menu-ov" onClick={() => setMenu(false)} />
+            <div className="user-menu">
+              <div className="um-head">{user.nombre}{admin ? " · admin" : ""}</div>
+              <button className="um-item" onClick={() => { setTab("equipo"); setMenu(false); }}>Mi perfil</button>
+              <button className="um-item" onClick={() => { setMenu(false); onLogout(); }}>Cerrar sesión</button>
+              <div className="um-ver">Versión {APP_VERSION}</div>
+            </div>
+          </>}
+        </div>
       </header>
 
       {tab === "muro" && <Muro user={user} />}

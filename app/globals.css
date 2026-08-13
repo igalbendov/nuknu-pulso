@@ -71,6 +71,12 @@ label.f em{font-style:normal; opacity:.6;}
 .user-pill{display:flex; align-items:center; gap:8px; background:none; border:1px solid var(--line); border-radius:100px; padding:5px 13px 5px 5px; cursor:pointer; color:var(--ink); font-size:12.5px; letter-spacing:.04em;}
 .user-pill:hover{border-color:var(--ink);}
 .u-av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:600;background:var(--ink);color:#fff;}
+.menu-ov{position:fixed;inset:0;z-index:40;}
+.user-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:41;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-width:200px;overflow:hidden;}
+.um-head{padding:11px 14px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);}
+.um-item{display:block;width:100%;text-align:left;background:none;border:none;padding:12px 14px;font-size:14px;color:var(--ink);cursor:pointer;font-family:inherit;}
+.um-item:hover{background:var(--paper2);}
+.um-ver{padding:9px 14px;font-size:10px;color:var(--muted);border-top:1px solid var(--line);letter-spacing:.1em;text-transform:uppercase;}
 
 /* muro */
 .bday{display:flex; align-items:center; gap:13px; background:var(--paper2); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; margin-bottom:14px;}
