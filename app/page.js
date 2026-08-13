@@ -12,13 +12,7 @@ const SESSION_KEY = "nuknu-session-v1";
 const isAdminName = (n) => ADMIN_NAMES.map((x) => x.toLowerCase()).includes(String(n).toLowerCase());
 
 function Mark({ size = 42 }) {
-  return (
-    <span className="mark" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M2 13 h5 l2.5 -7 l4 14 l3 -9 h5.5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </span>
-  );
+  return <img className="mark" src="/mark.png" alt="NUKNU" width={size} height={size} />;
 }
 
 // ═══════════ LOGIN ═══════════
@@ -42,8 +36,8 @@ function LoginGate({ onLogin }) {
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <Mark size={48} />
-        <h1 className="wordmark" style={{ marginBottom: 4 }}>NUKNU</h1>
+        <Mark size={64} />
+        <img className="wm-img big" src="/wordmark.png" alt="nuknu" style={{ margin: "14px auto 4px" }} />
         <div className="tagsub" style={{ marginBottom: 22 }}>Pulso</div>
         {step === "name" && <>
           <input autoFocus placeholder="Su nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} onKeyDown={(e) => e.key === "Enter" && cont()} />
@@ -132,7 +126,7 @@ function Hub({ user, onLogout }) {
   return (
     <div className="wrap">
       <header className="app">
-        <div className="brand"><Mark /><div><h1 className="wordmark">NUKNU</h1><div className="tagsub">Pulso · {label}</div></div></div>
+        <div className="brand"><Mark /><div><img className="wm-img" src="/wordmark.png" alt="nuknu" /><div className="tagsub">Pulso · {label}</div></div></div>
         <div style={{ position: "relative" }}>
           <button className="user-pill" onClick={() => setMenu((m) => !m)} title="Menú">
             <span className="u-av">{initials(user.nombre)}</span>
