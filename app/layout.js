@@ -1,14 +1,14 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "NUKNU · Pulso — Estado del equipo",
-  description: "Todo el equipo al día: quién está en qué, ahora mismo.",
+  title: "NUKNU · Pulso",
+  description: "El equipo NUKNU, al día: novedades, rendiciones y minutas.",
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f1115",
+  themeColor: "#F4F1EB",
 };
 
 export default function RootLayout({ children }) {
