@@ -24,7 +24,13 @@ function LoginGate({ onLogin }) {
   const [err, setErr] = useState(""), [busy, setBusy] = useState(false);
   async function cont() {
     setErr(""); if (nombre.trim().length < 2) { setErr("Ingrese su nombre."); return; }
-    setBusy(true); try { const e = await api.userExists(nombre); setStep(e ? "login" : "create"); } catch (e) { setErr(e.message); } setBusy(false);
+    setBusy(true);
+    try {
+      const { authorized, hasPin } = await api.checkAccess(nombre);
+      if (!authorized) { setErr("No estás autorizado/a. Pídele al administrador que te agregue al equipo."); setBusy(false); return; }
+      setStep(hasPin ? "login" : "create");
+    } catch (e) { setErr(e.message); }
+    setBusy(false);
   }
   async function entrar() {
     setErr(""); if (!/^\d{4,6}$/.test(pin)) { setErr("El PIN debe tener de 4 a 6 números."); return; }
@@ -40,7 +46,7 @@ function LoginGate({ onLogin }) {
       <div className="login-card">
         <Mark size={64} />
         <img className="wm-img big" src="/wordmark.png" alt="nuknu" style={{ margin: "14px auto 4px" }} />
-        <div className="tagsub" style={{ marginBottom: 22 }}>Pulso</div>
+        <div className="tagsub" style={{ marginBottom: 22 }}>Team</div>
         {step === "name" && <>
           <input autoFocus placeholder="Su nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} onKeyDown={(e) => e.key === "Enter" && cont()} />
           <button className="btn btn-primary full" onClick={cont} disabled={busy}>{busy ? "…" : "Continuar"}</button>
@@ -201,15 +207,58 @@ function Muro({ user }) {
 }
 
 // ═══════════ HUB ═══════════
+const TIENDAS_M = ["Tienda Pausa Pasteur", "Tienda Casa Costanera", "Oficina", "Terreno", "Otro"];
+function ProfileModal({ user, onClose }) {
+  const [f, setF] = useState({ nombreCompleto: "", cargo: "", tienda: "", fechaNac: "" });
+  const [existing, setExisting] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    api.listProfiles().then((ps) => {
+      const mine = ps.find((p) => (p.nombre || "").toLowerCase() === user.nombre.toLowerCase());
+      if (mine) { setF({ nombreCompleto: mine.nombreCompleto || "", cargo: mine.cargo || "", tienda: mine.tienda || "", fechaNac: "" }); setExisting(mine.fechaNac || ""); }
+    });
+  }, [user]);
+  async function guardar() {
+    setBusy(true);
+    let mmdd = existing; if (f.fechaNac) { const m = f.fechaNac.match(/\d{4}-(\d{2})-(\d{2})/); if (m) mmdd = m[1] + "-" + m[2]; }
+    try { await api.saveProfile({ nombre: user.nombre, nombreCompleto: f.nombreCompleto.trim(), cargo: f.cargo.trim(), tienda: f.tienda, fechaNac: mmdd, by: user.nombre }); } catch (e) {}
+    setBusy(false); onClose();
+  }
+  return (
+    <div className="modal-ov" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h2 style={{ fontSize: 15, color: "var(--ink)" }}>¡Bienvenido/a a Nuknu Team!</h2>
+        <p className="hint" style={{ marginTop: 0 }}>Complete su perfil. Aparece en el directorio del equipo y activa su cumpleaños.</p>
+        <label className="f">Nombre completo</label>
+        <input autoFocus placeholder="Ej: Fernanda Deichler" value={f.nombreCompleto} onChange={(e) => setF({ ...f, nombreCompleto: e.target.value })} style={{ marginBottom: 12 }} />
+        <div className="fgrid">
+          <div><label className="f">Cargo</label><input placeholder="Ej: Vendedora" value={f.cargo} onChange={(e) => setF({ ...f, cargo: e.target.value })} /></div>
+          <div><label className="f">Tienda / área</label><select value={f.tienda} onChange={(e) => setF({ ...f, tienda: e.target.value })}><option value="">Seleccionar…</option>{TIENDAS_M.map((t) => <option key={t}>{t}</option>)}</select></div>
+          <div className="full"><label className="f">Fecha de nacimiento {existing ? "(ya cargada)" : ""}</label><input type="date" value={f.fechaNac} onChange={(e) => setF({ ...f, fechaNac: e.target.value })} /></div>
+        </div>
+        <button className="btn btn-primary full" style={{ marginTop: 16 }} onClick={guardar} disabled={busy}>{busy ? "Guardando…" : "Guardar perfil"}</button>
+        <button className="btn-link" style={{ marginTop: 10, width: "100%" }} onClick={onClose}>Completar después</button>
+      </div>
+    </div>
+  );
+}
+
 function Hub({ user, onLogout }) {
   const [tab, setTab] = useState("muro");
   const [menu, setMenu] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const admin = isAdminName(user.nombre);
+  useEffect(() => {
+    api.listProfiles().then((ps) => {
+      const mine = ps.find((p) => (p.nombre || "").toLowerCase() === user.nombre.toLowerCase());
+      if (!mine || !mine.nombreCompleto) setShowProfile(true);
+    }).catch(() => {});
+  }, [user]);
   const label = { muro: "Muro", tareas: "Tareas", rendiciones: "Rendiciones", minutas: "Minutas", equipo: "Equipo" }[tab];
   return (
     <div className="wrap">
       <header className="app">
-        <div className="brand"><Mark /><div><img className="wm-img" src="/wordmark.png" alt="nuknu" /><div className="tagsub">Pulso · {label}</div></div></div>
+        <div className="brand"><Mark /><div><img className="wm-img" src="/wordmark.png" alt="nuknu" /><div className="tagsub">Team · {label}</div></div></div>
         <div style={{ position: "relative" }}>
           <button className="user-pill" onClick={() => setMenu((m) => !m)} title="Menú">
             <span className="u-av">{initials(user.nombre)}</span>
@@ -232,9 +281,11 @@ function Hub({ user, onLogout }) {
       {tab === "tareas" && <TareasModule user={user} admin={admin} />}
       {tab === "rendiciones" && <RendicionesModule user={user} admin={admin} />}
       {tab === "minutas" && <MinutasModule user={user} admin={admin} />}
-      {tab === "equipo" && <EquipoModule user={user} />}
+      {tab === "equipo" && <EquipoModule user={user} admin={admin} />}
 
-      <footer className="app">NUKNU · Pulso {DEMO_MODE ? "· prueba" : ""}</footer>
+      {showProfile && <ProfileModal user={user} onClose={() => setShowProfile(false)} />}
+
+      <footer className="app">Nuknu Team {DEMO_MODE ? "· prueba" : ""}</footer>
 
       <nav className="tabbar">
         <button className={"tab" + (tab === "muro" ? " on" : "")} onClick={() => setTab("muro")}><span className="ic">◒</span>Muro</button>

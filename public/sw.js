@@ -1,8 +1,8 @@
-// Service Worker de NUKNU Pulso — recibe y muestra las notificaciones push.
+// Service Worker de Nuknu Team — recibe y muestra las notificaciones push.
 self.addEventListener("push", function (e) {
   let data = {};
-  try { data = e.data.json(); } catch (err) { data = { title: "NUKNU Pulso", body: e.data ? e.data.text() : "" }; }
-  const title = data.title || "NUKNU Pulso";
+  try { data = e.data.json(); } catch (err) { data = { title: "Nuknu Team", body: e.data ? e.data.text() : "" }; }
+  const title = data.title || "Nuknu Team";
   const options = {
     body: data.body || "",
     icon: "/icon-192.png",

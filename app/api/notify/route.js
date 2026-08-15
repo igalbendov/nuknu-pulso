@@ -32,7 +32,7 @@ export async function POST(request) {
     return Response.json({ error: "No se pudieron leer las suscripciones." }, { status: 502 });
   }
 
-  const payload = JSON.stringify({ title: title || "NUKNU Pulso", body: msg || "", url: url || "/" });
+  const payload = JSON.stringify({ title: title || "Nuknu Team", body: msg || "", url: url || "/" });
   const targets = subs.filter((s) => (s.nombre || "").toLowerCase() !== String(excludeName || "").toLowerCase());
 
   const results = await Promise.allSettled(

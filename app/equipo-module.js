@@ -53,7 +53,7 @@ function MiPerfil({ user, onSaved }) {
     let mmdd = f.fechaNacMMDD || "";
     if (f.fechaNac) { const m = f.fechaNac.match(/\d{4}-(\d{2})-(\d{2})/); if (m) mmdd = m[1] + "-" + m[2]; }
     try {
-      await api.saveProfile({ nombre: user.nombre, nombreCompleto: f.nombreCompleto.trim(), cargo: f.cargo.trim(), tienda: f.tienda, fechaNac: mmdd, email: user.email || "" });
+      await api.saveProfile({ nombre: user.nombre, nombreCompleto: f.nombreCompleto.trim(), cargo: f.cargo.trim(), tienda: f.tienda, fechaNac: mmdd, email: user.email || "", by: user.nombre });
       setSt("ok"); onSaved(); setTimeout(() => setSt("idle"), 2500);
     } catch (e) { setSt("idle"); }
   }
@@ -97,10 +97,55 @@ function Directorio({ refreshKey }) {
   );
 }
 
-export default function EquipoModule({ user }) {
+function GestionEquipo({ user, onChanged }) {
+  const [list, setList] = useState([]);
+  const [nombre, setNombre] = useState(""), [cargo, setCargo] = useState(""), [tienda, setTienda] = useState("");
+  const [busy, setBusy] = useState(false), [msg, setMsg] = useState("");
+  function load() { api.listProfiles().then(setList); }
+  useEffect(() => { load(); }, []);
+  async function agregar() {
+    const n = nombre.trim(); if (!n) return;
+    setBusy(true); setMsg("");
+    await api.saveProfile({ nombre: n, cargo: cargo.trim(), tienda, nombreCompleto: "", fechaNac: "", by: user.nombre });
+    setNombre(""); setCargo(""); setTienda(""); setBusy(false); setMsg("Persona agregada. Ya puede ingresar y crear su PIN.");
+    load(); onChanged && onChanged();
+  }
+  async function quitar(n) {
+    if (n.toLowerCase() === user.nombre.toLowerCase()) return;
+    setList((l) => l.filter((p) => p.nombre !== n));
+    await api.removePerson(n, user.nombre);
+  }
+  return (
+    <div className="card">
+      <h2>👥 Gestionar equipo (admin)</h2>
+      <p className="hint" style={{ marginTop: 0 }}>Solo las personas que agregue acá podrán ingresar. Cada una crea su PIN la primera vez.</p>
+      <div className="fgrid">
+        <div className="full"><label className="f">Nombre de pila (con el que ingresa)</label><input placeholder="Ej: Fernanda" value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
+        <div><label className="f">Cargo <em>(opcional)</em></label><input placeholder="Ej: Vendedora" value={cargo} onChange={(e) => setCargo(e.target.value)} /></div>
+        <div><label className="f">Tienda / área <em>(opcional)</em></label><select value={tienda} onChange={(e) => setTienda(e.target.value)}><option value="">Seleccionar…</option>{TIENDAS.map((t) => <option key={t}>{t}</option>)}</select></div>
+      </div>
+      {msg && <div className="toast" style={{ marginTop: 12 }}>{msg}</div>}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+        <button className="btn btn-primary" onClick={agregar} disabled={busy || !nombre.trim()}>{busy ? "Agregando…" : "Agregar persona"}</button>
+      </div>
+      <div style={{ marginTop: 16 }}>
+        {list.map((p, i) => (
+          <div className="row-item" key={i} style={{ padding: "10px 13px" }}>
+            <div className="pav" style={{ background: avatarColor(p.nombre) }}>{initials(p.nombreCompleto || p.nombre)}</div>
+            <div className="ri-body"><div className="ri-title">{p.nombre}</div><div className="ri-meta">{[p.cargo, p.tienda].filter(Boolean).join(" · ") || "—"}</div></div>
+            {p.nombre.toLowerCase() !== user.nombre.toLowerCase() && <button className="del-x" onClick={() => quitar(p.nombre)} aria-label="quitar">✕</button>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function EquipoModule({ user, admin }) {
   const [refresh, setRefresh] = useState(0);
   return (
     <div>
+      {admin && <GestionEquipo user={user} onChanged={() => setRefresh((r) => r + 1)} />}
       <MiPerfil user={user} onSaved={() => setRefresh((r) => r + 1)} />
       <Notificaciones user={user} />
       <Directorio refreshKey={refresh} />

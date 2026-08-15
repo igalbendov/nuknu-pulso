@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "NUKNU · Pulso",
+  title: "Nuknu Team",
   description: "El equipo NUKNU, al día: novedades, rendiciones y minutas.",
   icons: { icon: "/favicon.png", apple: "/apple-touch-icon.png" },
   manifest: "/manifest.json",

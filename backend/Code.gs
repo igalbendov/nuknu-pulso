@@ -62,8 +62,10 @@ function doPost(e) {
   var a = d.action;
   try {
     if (a === "userExists")      return json_({ ok: true, exists: userExists_(d.nombre) });
+    if (a === "checkAccess")     return json_({ ok: true, authorized: isAuthorized_(d.nombre), hasPin: userExists_(d.nombre) });
     if (a === "register")        return register_(d.nombre, d.pin);
     if (a === "login")           return login_(d.nombre, d.pin);
+    if (a === "removePerson")    return removePerson_(d);
     if (a === "listNews")        return json_({ ok: true, news: listNews_() });
     if (a === "postNews")        return json_({ ok: true, item: postNews_(d) });
     if (a === "listMinutas")     return json_({ ok: true, minutas: listMinutas_(d.nombre, d.isAdmin) });
@@ -98,11 +100,31 @@ function userExists_(nombre) {
     return String(u.nombre).toLowerCase() === (nombre || "").toLowerCase();
   });
 }
+// ¿La persona fue autorizada por el admin? (está en el roster / Perfiles)
+// Los administradores siempre están autorizados (para no quedar bloqueados).
+function isAuthorized_(nombre) {
+  if (isAdmin_(nombre)) return true;
+  return rows_(profSheet_()).some(function (p) {
+    return String(p.nombre).toLowerCase() === String(nombre || "").toLowerCase();
+  });
+}
 function register_(nombre, pin) {
   if (!nombre || !pin) return json_({ ok: false, error: "Faltan datos." });
+  if (!isAuthorized_(nombre)) return json_({ ok: false, error: "No estás autorizado. Pídele al administrador que te agregue al equipo." });
   if (userExists_(nombre)) return json_({ ok: false, error: "Ese nombre ya tiene un PIN." });
   usersSheet_().appendRow([nombre.trim(), hashPin_(nombre, pin), new Date()]);
   return json_({ ok: true, nombre: nombre.trim() });
+}
+// Quita a una persona: borra su acceso (PIN), su perfil y sus suscripciones. Solo admin.
+function removePerson_(d) {
+  if (!isAdmin_(d.by)) return json_({ ok: false, error: "Solo el administrador puede quitar personas." });
+  var name = String(d.nombre || "").toLowerCase();
+  [profSheet_(), usersSheet_(), subsSheet_()].forEach(function (sh) {
+    var data = sh.getDataRange().getValues(), head = data[0], iN = head.indexOf("nombre");
+    if (iN < 0) return;
+    for (var r = data.length - 1; r >= 1; r--) { if (String(data[r][iN]).toLowerCase() === name) sh.deleteRow(r + 1); }
+  });
+  return json_({ ok: true });
 }
 function login_(nombre, pin) {
   var sh = usersSheet_();
@@ -269,6 +291,9 @@ function listProfiles_() {
 }
 function saveProfile_(d) {
   if (!d.nombre) return json_({ ok: false, error: "Falta el nombre." });
+  // Solo podés editar tu propio perfil; el admin puede crear/editar el de cualquiera.
+  var self = String(d.nombre).toLowerCase() === String(d.by || "").toLowerCase();
+  if (!self && !isAdmin_(d.by)) return json_({ ok: false, error: "Solo el administrador puede crear o editar el perfil de otra persona." });
   var sh = profSheet_(), data = sh.getDataRange().getValues(), head = data[0], iN = head.indexOf("nombre");
   var fila = [d.nombre, d.nombreCompleto || "", d.cargo || "", d.tienda || "", d.fechaNac || "", d.email || "", new Date()];
   for (var r = 1; r < data.length; r++) {

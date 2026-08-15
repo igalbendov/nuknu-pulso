@@ -7,7 +7,7 @@ function fmt(d) { if (!d) return ""; const s = String(d).split("T")[0]; if (!s.i
 function vencidaTxt(vence, estado) {
   if (!vence || estado === "hecha") return "";
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-  const [y, m, d] = String(vence).split("-").map(Number);
+  const [y, m, d] = String(vence).split("T")[0].split("-").map(Number);
   if (!y) return "";
   const dv = new Date(y, m - 1, d);
   const diff = Math.round((dv - hoy) / 86400000);
