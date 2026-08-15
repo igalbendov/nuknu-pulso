@@ -76,6 +76,13 @@ function doPost(e) {
     if (a === "toggleLike")      return toggleLike_(d);
     if (a === "listComments")    return json_({ ok: true, comments: listComments_() });
     if (a === "addComment")      return addComment_(d);
+    if (a === "listTareas")      return json_({ ok: true, tareas: listTareas_() });
+    if (a === "addTarea")        return addTarea_(d);
+    if (a === "toggleTarea")     return toggleTarea_(d);
+    if (a === "deleteTarea")     return deleteTarea_(d);
+    if (a === "saveSubscription")return saveSubscription_(d);
+    if (a === "listSubscriptions")return json_({ ok: true, subs: listSubscriptions_() });
+    if (a === "removeSubscription")return removeSubscription_(d);
     return json_({ ok: false, error: "Acción desconocida: " + a });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
@@ -179,6 +186,54 @@ function addComment_(d) {
   var id = "c" + new Date().getTime(), ts = new Date().getTime();
   commentsSheet_().appendRow([id, d.newsId, d.autor, d.texto, ts]);
   return json_({ ok: true, item: { id: id, newsId: d.newsId, autor: d.autor, texto: d.texto, ts: ts } });
+}
+
+// ── Tareas / checklists ─────────────────────────────────────
+function tareasSheet_() { return sheet_("Tareas", ["id", "titulo", "asignadoA", "creadoPor", "vence", "estado", "tienda", "ts"]); }
+function listTareas_() {
+  return rows_(tareasSheet_()).map(function (t) {
+    return { id: t.id, titulo: t.titulo, asignadoA: t.asignadoA, creadoPor: t.creadoPor, vence: t.vence, estado: t.estado || "pendiente", tienda: t.tienda, ts: Number(t.ts) || null };
+  });
+}
+function addTarea_(d) {
+  var id = "t" + new Date().getTime(), ts = new Date().getTime();
+  tareasSheet_().appendRow([id, d.titulo, d.asignadoA || "", d.creadoPor || "", d.vence || "", "pendiente", d.tienda || "", ts]);
+  return json_({ ok: true, item: { id: id, titulo: d.titulo, asignadoA: d.asignadoA || "", creadoPor: d.creadoPor || "", vence: d.vence || "", estado: "pendiente", tienda: d.tienda || "", ts: ts } });
+}
+function toggleTarea_(d) {
+  var sh = tareasSheet_(), data = sh.getDataRange().getValues(), head = data[0], iId = head.indexOf("id"), iEs = head.indexOf("estado");
+  for (var r = 1; r < data.length; r++) {
+    if (String(data[r][iId]) === String(d.id)) {
+      var nuevo = d.estado || (String(data[r][iEs]) === "hecha" ? "pendiente" : "hecha");
+      sh.getRange(r + 1, iEs + 1).setValue(nuevo);
+      return json_({ ok: true, estado: nuevo });
+    }
+  }
+  return json_({ ok: false });
+}
+function deleteTarea_(d) {
+  var sh = tareasSheet_(), data = sh.getDataRange().getValues(), head = data[0], iId = head.indexOf("id");
+  for (var r = data.length - 1; r >= 1; r--) { if (String(data[r][iId]) === String(d.id)) sh.deleteRow(r + 1); }
+  return json_({ ok: true });
+}
+
+// ── Suscripciones de notificaciones push ────────────────────
+function subsSheet_() { return sheet_("Suscripciones", ["nombre", "endpoint", "sub", "ts"]); }
+function saveSubscription_(d) {
+  var sh = subsSheet_(), data = sh.getDataRange().getValues(), head = data[0], iE = head.indexOf("endpoint");
+  for (var r = 1; r < data.length; r++) {
+    if (String(data[r][iE]) === String(d.endpoint)) { sh.getRange(r + 1, 1, 1, 4).setValues([[d.nombre, d.endpoint, d.sub, new Date()]]); return json_({ ok: true }); }
+  }
+  sh.appendRow([d.nombre, d.endpoint, d.sub, new Date()]);
+  return json_({ ok: true });
+}
+function listSubscriptions_() {
+  return rows_(subsSheet_()).map(function (s) { return { nombre: s.nombre, endpoint: s.endpoint, sub: s.sub }; });
+}
+function removeSubscription_(d) {
+  var sh = subsSheet_(), data = sh.getDataRange().getValues(), head = data[0], iE = head.indexOf("endpoint");
+  for (var r = data.length - 1; r >= 1; r--) { if (String(data[r][iE]) === String(d.endpoint)) sh.deleteRow(r + 1); }
+  return json_({ ok: true });
 }
 
 // ── Minutas (privadas por autor; admin ve todo) ─────────────

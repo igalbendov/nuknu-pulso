@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { CATEGORIES, BIRTHDAYS, initials, avatarColor, catOf } from "@/lib/seed";
 import { ADMIN_NAMES, DEMO_MODE, APP_VERSION } from "@/lib/config";
 import * as api from "@/lib/api";
+import { notifyTeam } from "@/lib/push";
 import RendicionesModule from "./rendiciones-module";
 import MinutasModule from "./minutas-module";
 import EquipoModule from "./equipo-module";
+import TareasModule from "./tareas-module";
 
 const SESSION_KEY = "nuknu-session-v1";
 const isAdminName = (n) => ADMIN_NAMES.map((x) => x.toLowerCase()).includes(String(n).toLowerCase());
@@ -153,6 +155,7 @@ function Muro({ user }) {
       if (file) { fileData = await toB64(file); fileName = file.name; fileMime = file.type; }
       const item = await api.postNews({ autor: user.nombre, cat, text: t, fileData, fileName, fileMime });
       setNews((n) => [item, ...n]); setText(""); setCat("general"); setFile(null);
+      notifyTeam({ title: `${user.nombre} publicó una novedad`, body: t.slice(0, 90) || "(adjunto)", url: "/", excludeName: user.nombre });
     } catch (e) { setErr("No se pudo publicar. Intente con un archivo más liviano."); }
     setBusy(false);
   }
@@ -202,7 +205,7 @@ function Hub({ user, onLogout }) {
   const [tab, setTab] = useState("muro");
   const [menu, setMenu] = useState(false);
   const admin = isAdminName(user.nombre);
-  const label = { muro: "Muro", rendiciones: "Rendiciones", minutas: "Minutas", equipo: "Equipo" }[tab];
+  const label = { muro: "Muro", tareas: "Tareas", rendiciones: "Rendiciones", minutas: "Minutas", equipo: "Equipo" }[tab];
   return (
     <div className="wrap">
       <header className="app">
@@ -226,6 +229,7 @@ function Hub({ user, onLogout }) {
       </header>
 
       {tab === "muro" && <Muro user={user} />}
+      {tab === "tareas" && <TareasModule user={user} admin={admin} />}
       {tab === "rendiciones" && <RendicionesModule user={user} admin={admin} />}
       {tab === "minutas" && <MinutasModule user={user} admin={admin} />}
       {tab === "equipo" && <EquipoModule user={user} />}
@@ -234,7 +238,8 @@ function Hub({ user, onLogout }) {
 
       <nav className="tabbar">
         <button className={"tab" + (tab === "muro" ? " on" : "")} onClick={() => setTab("muro")}><span className="ic">◒</span>Muro</button>
-        <button className={"tab" + (tab === "rendiciones" ? " on" : "")} onClick={() => setTab("rendiciones")}><span className="ic">▤</span>Rendiciones</button>
+        <button className={"tab" + (tab === "tareas" ? " on" : "")} onClick={() => setTab("tareas")}><span className="ic">✓</span>Tareas</button>
+        <button className={"tab" + (tab === "rendiciones" ? " on" : "")} onClick={() => setTab("rendiciones")}><span className="ic">▤</span>Gastos</button>
         <button className={"tab" + (tab === "minutas" ? " on" : "")} onClick={() => setTab("minutas")}><span className="ic">◍</span>Minutas</button>
         <button className={"tab" + (tab === "equipo" ? " on" : "")} onClick={() => setTab("equipo")}><span className="ic">◇</span>Equipo</button>
       </nav>

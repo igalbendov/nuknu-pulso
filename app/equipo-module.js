@@ -2,6 +2,28 @@
 import { useEffect, useState } from "react";
 import { initials, avatarColor } from "@/lib/seed";
 import * as api from "@/lib/api";
+import { enablePush, pushSupported } from "@/lib/push";
+
+function Notificaciones({ user }) {
+  const [st, setSt] = useState("idle"); // idle | ok | denied | unsupported | error
+  const soportado = typeof window !== "undefined" ? pushSupported() : true;
+  async function activar() {
+    setSt("loading");
+    const r = await enablePush(user.nombre);
+    setSt(r.ok ? "ok" : (r.reason === "denied" ? "denied" : r.reason === "unsupported" ? "unsupported" : "error"));
+  }
+  return (
+    <div className="card">
+      <h2>🔔 Notificaciones</h2>
+      <p className="hint" style={{ marginTop: 0 }}>Reciba un aviso en este dispositivo cuando haya una novedad importante en el equipo.</p>
+      {st === "ok" ? <div className="toast">Notificaciones activadas en este dispositivo ✓</div> :
+        <button className="btn btn-primary" onClick={activar} disabled={st === "loading" || !soportado}>{st === "loading" ? "Activando…" : "Activar notificaciones"}</button>}
+      {st === "denied" && <p className="ferr" style={{ textAlign: "left" }}>El navegador bloqueó el permiso. Actívelo desde los ajustes del sitio y vuelva a intentar.</p>}
+      {(st === "unsupported" || !soportado) && <p className="hint">En iPhone, primero agregue la app a la pantalla de inicio (desde Safari) y ábrala desde ahí; recién ahí se pueden activar las notificaciones.</p>}
+      {st === "error" && <p className="ferr" style={{ textAlign: "left" }}>No se pudo activar. En iPhone, abra la app desde el ícono de la pantalla de inicio.</p>}
+    </div>
+  );
+}
 
 const TIENDAS = ["Tienda Pausa Pasteur", "Tienda Casa Costanera", "Oficina", "Terreno", "Otro"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -80,6 +102,7 @@ export default function EquipoModule({ user }) {
   return (
     <div>
       <MiPerfil user={user} onSaved={() => setRefresh((r) => r + 1)} />
+      <Notificaciones user={user} />
       <Directorio refreshKey={refresh} />
     </div>
   );
