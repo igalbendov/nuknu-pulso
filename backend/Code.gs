@@ -73,6 +73,9 @@ function doPost(e) {
     if (a === "updateRendStatus")return updateRendStatus_(d);
     if (a === "listProfiles")    return json_({ ok: true, profiles: listProfiles_() });
     if (a === "saveProfile")     return saveProfile_(d);
+    if (a === "toggleLike")      return toggleLike_(d);
+    if (a === "listComments")    return json_({ ok: true, comments: listComments_() });
+    if (a === "addComment")      return addComment_(d);
     return json_({ ok: false, error: "Acción desconocida: " + a });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
@@ -105,17 +108,77 @@ function login_(nombre, pin) {
 }
 
 // ── Muro de novedades (público) ─────────────────────────────
-function newsSheet_() { return sheet_("Novedades", ["id", "autor", "cat", "text", "ts", "likes"]); }
+// agrega columnas nuevas a una hoja existente sin perder datos
+function ensureCols_(sh, cols) {
+  var lastC = Math.max(1, sh.getLastColumn());
+  var head = sh.getRange(1, 1, 1, lastC).getValues()[0];
+  var changed = false;
+  cols.forEach(function (c) { if (head.indexOf(c) === -1) { head.push(c); changed = true; } });
+  if (changed) sh.getRange(1, 1, 1, head.length).setValues([head]);
+  return head;
+}
+function newsSheet_() {
+  var sh = sheet_("Novedades", ["id", "autor", "cat", "text", "ts", "likes"]);
+  ensureCols_(sh, ["mediaUrl", "mediaType", "mediaId", "mediaName", "likedBy"]);
+  return sh;
+}
+function muroFolder_() {
+  var it = DriveApp.getFoldersByName("NUKNU Muro");
+  return it.hasNext() ? it.next() : DriveApp.createFolder("NUKNU Muro");
+}
 function listNews_() {
   return rows_(newsSheet_()).map(function (n) {
-    return { id: n.id, autor: n.autor, cat: n.cat, text: n.text, ts: Number(n.ts) || null, likes: Number(n.likes) || 0 };
+    return {
+      id: n.id, autor: n.autor, cat: n.cat, text: n.text, ts: Number(n.ts) || null,
+      likes: Number(n.likes) || 0, mediaUrl: n.mediaUrl || "", mediaType: n.mediaType || "",
+      mediaId: n.mediaId || "", mediaName: n.mediaName || "", likedBy: String(n.likedBy || "")
+    };
   }).sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
 }
 function postNews_(d) {
-  var id = "n" + new Date().getTime();
-  var ts = new Date().getTime();
-  newsSheet_().appendRow([id, d.autor, d.cat, d.text, ts, 0]);
-  return { id: id, autor: d.autor, cat: d.cat, text: d.text, ts: ts, likes: 0 };
+  var mediaUrl = "", mediaType = "", mediaId = "", mediaName = "";
+  if (d.fileData && d.fileName) {
+    try {
+      var bytes = Utilities.base64Decode(d.fileData);
+      var blob = Utilities.newBlob(bytes, d.fileMime || "application/octet-stream", d.fileName);
+      var f = muroFolder_().createFile(blob);
+      f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      mediaId = f.getId(); mediaName = d.fileName; mediaUrl = f.getUrl();
+      var mime = d.fileMime || "";
+      mediaType = mime.indexOf("image") === 0 ? "image" : mime.indexOf("video") === 0 ? "video" : "file";
+    } catch (e) { mediaUrl = ""; }
+  }
+  var id = "n" + new Date().getTime(), ts = new Date().getTime();
+  var sh = newsSheet_(), head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  var obj = { id: id, autor: d.autor, cat: d.cat, text: d.text, ts: ts, likes: 0, mediaUrl: mediaUrl, mediaType: mediaType, mediaId: mediaId, mediaName: mediaName, likedBy: "" };
+  sh.appendRow(head.map(function (h) { return obj[h] !== undefined ? obj[h] : ""; }));
+  return obj;
+}
+function toggleLike_(d) {
+  var sh = newsSheet_(), data = sh.getDataRange().getValues(), head = data[0];
+  var iId = head.indexOf("id"), iLb = head.indexOf("likedBy"), iLk = head.indexOf("likes");
+  for (var r = 1; r < data.length; r++) {
+    if (String(data[r][iId]) === String(d.id)) {
+      var lb = String(data[r][iLb] || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+      var idx = lb.map(function (x) { return x.toLowerCase(); }).indexOf(String(d.nombre).toLowerCase());
+      var liked; if (idx >= 0) { lb.splice(idx, 1); liked = false; } else { lb.push(d.nombre); liked = true; }
+      sh.getRange(r + 1, iLb + 1).setValue(lb.join(", "));
+      sh.getRange(r + 1, iLk + 1).setValue(lb.length);
+      return json_({ ok: true, likes: lb.length, liked: liked });
+    }
+  }
+  return json_({ ok: false });
+}
+function commentsSheet_() { return sheet_("Comentarios", ["id", "newsId", "autor", "texto", "ts"]); }
+function listComments_() {
+  return rows_(commentsSheet_()).map(function (c) {
+    return { id: c.id, newsId: c.newsId, autor: c.autor, texto: c.texto, ts: Number(c.ts) || null };
+  });
+}
+function addComment_(d) {
+  var id = "c" + new Date().getTime(), ts = new Date().getTime();
+  commentsSheet_().appendRow([id, d.newsId, d.autor, d.texto, ts]);
+  return json_({ ok: true, item: { id: id, newsId: d.newsId, autor: d.autor, texto: d.texto, ts: ts } });
 }
 
 // ── Minutas (privadas por autor; admin ve todo) ─────────────

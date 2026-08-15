@@ -84,35 +84,115 @@ function relTime(it) {
   if (min == null) return ""; if (min < 1) return "recién"; if (min < 60) return `hace ${Math.round(min)} min`;
   const h = Math.floor(min / 60); if (h < 24) return `hace ${h} h`; return `hace ${Math.floor(h / 24)} d`;
 }
+function toB64(f) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(",")[1]); r.onerror = rej; r.readAsDataURL(f); }); }
+
+function Media({ it }) {
+  if (!it.mediaType) return it.photo ? <div className="news-img" style={{ background: it.photo }} /> : null;
+  const isData = String(it.mediaUrl || "").startsWith("data:");
+  if (it.mediaType === "image") {
+    const src = isData ? it.mediaUrl : (it.mediaId ? `https://drive.google.com/thumbnail?id=${it.mediaId}&sz=w1000` : it.mediaUrl);
+    return <a href={it.mediaUrl || src} target="_blank" rel="noopener noreferrer"><img className="news-media" src={src} alt="" loading="lazy" /></a>;
+  }
+  if (it.mediaType === "video") {
+    if (isData) return <video className="news-media" src={it.mediaUrl} controls />;
+    return <iframe className="news-media" src={`https://drive.google.com/file/d/${it.mediaId}/preview`} allow="autoplay" />;
+  }
+  return <a className="media-file" href={it.mediaUrl} target="_blank" rel="noopener noreferrer">📎 {it.mediaName || "Ver archivo"}</a>;
+}
+
+function PostCard({ it, user, comments, onLike, onComment }) {
+  const c = catOf(it.cat);
+  const likedBy = String(it.likedBy || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const iLiked = likedBy.map((x) => x.toLowerCase()).includes(user.nombre.toLowerCase());
+  const [open, setOpen] = useState(false);
+  const [cmt, setCmt] = useState("");
+  const mine = comments.filter((x) => x.newsId === it.id).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  async function send() { const t = cmt.trim(); if (!t) return; setCmt(""); await onComment(it.id, t); setOpen(true); }
+  return (
+    <div className="news">
+      <div className="news-top">
+        <div className="pav" style={{ background: avatarColor(it.autor) }}>{initials(it.autor)}</div>
+        <div className="news-who"><div className="news-name">{it.autor}</div><div className="news-time">{relTime(it)}</div></div>
+        <span className="cat-tag" style={{ background: c.soft, color: c.color }}>{c.label}</span>
+      </div>
+      {it.text && <div className="news-text">{it.text}</div>}
+      <Media it={it} />
+      <div className="news-react">
+        <button className={"like" + (iLiked ? " on" : "")} onClick={() => onLike(it.id)} title={likedBy.join(", ")}>{iLiked ? "♥" : "♡"} {it.likes || 0}</button>
+        <button className="like" onClick={() => setOpen((o) => !o)}>💬 {mine.length}</button>
+      </div>
+      {open && <div className="comments">
+        {mine.map((x) => (
+          <div className="comment" key={x.id}>
+            <div className="pav sm" style={{ background: avatarColor(x.autor) }}>{initials(x.autor)}</div>
+            <div><span className="c-autor">{x.autor}</span> <span className="c-text">{x.texto}</span></div>
+          </div>
+        ))}
+        <div className="c-add">
+          <input placeholder="Escriba un comentario…" value={cmt} onChange={(e) => setCmt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} />
+          <button className="btn btn-primary btn-sm" onClick={send} disabled={!cmt.trim()}>Enviar</button>
+        </div>
+      </div>}
+    </div>
+  );
+}
+
 function Muro({ user }) {
-  const [news, setNews] = useState([]), [text, setText] = useState(""), [cat, setCat] = useState("general"), [liked, setLiked] = useState({});
+  const [news, setNews] = useState([]), [comments, setComments] = useState([]);
+  const [text, setText] = useState(""), [cat, setCat] = useState("general");
+  const [file, setFile] = useState(null), [busy, setBusy] = useState(false), [err, setErr] = useState("");
   const [bday, setBday] = useState(null);
-  useEffect(() => { api.listNews().then(setNews); }, []);
+  useEffect(() => { api.listNews().then(setNews); api.listComments().then(setComments); }, []);
   useEffect(() => { api.listProfiles().then((ps) => { const withB = ps.filter((p) => p.fechaNac); setBday(nextBirthday(withB.length ? withB : BIRTHDAYS)); }).catch(() => setBday(nextBirthday(BIRTHDAYS))); }, []);
-  async function publish() { const t = text.trim(); if (!t) return; const item = await api.postNews({ autor: user.nombre, cat, text: t }); setNews((n) => [item, ...n]); setText(""); setCat("general"); }
-  function like(id) { setLiked((l) => { const on = !l[id]; setNews((n) => { const nx = n.map((it) => it.id === id ? { ...it, likes: Math.max(0, (it.likes || 0) + (on ? 1 : -1)) } : it); api.saveNews(nx); return nx; }); return { ...l, [id]: on }; }); }
+
+  async function publish() {
+    const t = text.trim(); if (!t && !file) return;
+    setErr(""); setBusy(true);
+    try {
+      let fileData = null, fileName = null, fileMime = null;
+      if (file) { fileData = await toB64(file); fileName = file.name; fileMime = file.type; }
+      const item = await api.postNews({ autor: user.nombre, cat, text: t, fileData, fileName, fileMime });
+      setNews((n) => [item, ...n]); setText(""); setCat("general"); setFile(null);
+    } catch (e) { setErr("No se pudo publicar. Intente con un archivo más liviano."); }
+    setBusy(false);
+  }
+  async function onLike(id) {
+    const r = await api.toggleLike(id, user.nombre);
+    setNews((n) => n.map((it) => {
+      if (it.id !== id) return it;
+      const lb = String(it.likedBy || "").split(",").map((s) => s.trim()).filter(Boolean);
+      const has = lb.map((x) => x.toLowerCase()).includes(user.nombre.toLowerCase());
+      const nlb = r.liked && !has ? [...lb, user.nombre] : (!r.liked ? lb.filter((x) => x.toLowerCase() !== user.nombre.toLowerCase()) : lb);
+      return { ...it, likes: r.likes, likedBy: nlb.join(", ") };
+    }));
+  }
+  async function onComment(newsId, texto) {
+    const item = await api.addComment({ newsId, autor: user.nombre, texto });
+    setComments((cs) => [...cs, item]);
+  }
+
+  function pickFile(e) {
+    const f = e.target.files[0]; if (!f) return;
+    if (f.size > 12 * 1024 * 1024) { setErr("El archivo supera 12 MB. Use uno más liviano o un video corto."); setFile(null); e.target.value = ""; return; }
+    setErr(""); setFile(f);
+  }
+
   return (
     <>
       {bday && bday.diff <= 7 && <div className="bday"><span className="cake">🎂</span><div><b>{bday.diff === 0 ? `Hoy cumple ${bday.nombre}` : `Pronto cumple ${bday.nombre}`}</b><div className="bday-sub">{bday.diff === 0 ? "Déjenle un saludo" : `En ${bday.diff} día${bday.diff > 1 ? "s" : ""}`}</div></div></div>}
       <div className="card">
         <textarea className="pub-text" placeholder="Comparta una novedad con el equipo…" value={text} onChange={(e) => setText(e.target.value)} />
+        {file && <div className="attach-chip">📎 {file.name} <button onClick={() => setFile(null)}>✕</button></div>}
+        {err && <div className="ferr" style={{ textAlign: "left", marginTop: 0 }}>{err}</div>}
         <div className="pub-foot">
           <div className="cat-row">{CATEGORIES.map((c) => <button key={c.key} className={"cat-chip" + (cat === c.key ? " on" : "")} onClick={() => setCat(c.key)}>{c.label}</button>)}</div>
-          <button className="btn btn-primary btn-sm" onClick={publish} disabled={!text.trim()}>Publicar</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <label className="btn btn-sm" style={{ cursor: "pointer" }}>📎<input type="file" accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx" onChange={pickFile} style={{ display: "none" }} /></label>
+            <button className="btn btn-primary btn-sm" onClick={publish} disabled={busy || (!text.trim() && !file)}>{busy ? "Publicando…" : "Publicar"}</button>
+          </div>
         </div>
       </div>
-      {news.map((it) => { const c = catOf(it.cat); return (
-        <div className="news" key={it.id}>
-          <div className="news-top">
-            <div className="pav" style={{ background: avatarColor(it.autor) }}>{initials(it.autor)}</div>
-            <div className="news-who"><div className="news-name">{it.autor}</div><div className="news-time">{relTime(it)}</div></div>
-            <span className="cat-tag" style={{ background: c.soft, color: c.color }}>{c.label}</span>
-          </div>
-          <div className="news-text">{it.text}</div>
-          {it.photo && <div className="news-img" style={{ background: it.photo }} />}
-          <div className="news-react"><button className={"like" + (liked[it.id] ? " on" : "")} onClick={() => like(it.id)}>{liked[it.id] ? "♥" : "♡"} {it.likes || 0}</button></div>
-        </div>
-      ); })}
+      {news.map((it) => <PostCard key={it.id} it={it} user={user} comments={comments} onLike={onLike} onComment={onComment} />)}
     </>
   );
 }
