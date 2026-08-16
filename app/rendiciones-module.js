@@ -22,7 +22,7 @@ function Nueva({ user, onDone }) {
     try {
       let fd = null, fn = null, fm = null;
       if (file) { fd = await toB64(file); fn = file.name; fm = file.type; }
-      const r = await api.submitRend({ autor: user.nombre, fechaGasto: f.fecha, monto: Number(f.monto), categoria: f.cat, medioPago: f.mp, numDoc: f.num, descripcion: f.desc.trim(), fileData: fd, fileName: fn, fileMime: fm });
+      const r = await api.submitRend({ autor: user.nombre, email: user.email, fechaGasto: f.fecha, monto: Number(f.monto), categoria: f.cat, medioPago: f.mp, numDoc: f.num, descripcion: f.desc.trim(), fileData: fd, fileName: fn, fileMime: fm });
       if (r.ok) { setF(init); setFile(null); setSt("success"); onDone(); } else { setErr(r.error || "Error al enviar."); setSt("idle"); }
     } catch (e) { setErr("Error: " + e.message); setSt("idle"); }
   }
@@ -53,7 +53,7 @@ function Nueva({ user, onDone }) {
 
 function Lista({ user, admin, refreshKey }) {
   const [exps, setExps] = useState(null), [fil, setFil] = useState(admin ? "Pendiente" : "todos");
-  const load = useCallback(async () => { setExps(null); setExps(await api.listRendiciones(user.nombre, admin)); }, [user, admin]);
+  const load = useCallback(async () => { setExps(null); setExps(await api.listRendiciones(user.email, admin)); }, [user, admin]);
   useEffect(() => { load(); }, [load, refreshKey]);
   async function update(id, estado, cmt) { setExps((p) => p.map((e) => e.id === id ? { ...e, estado, comentario: cmt } : e)); try { await api.updateRend(id, estado, cmt); } catch (e) { load(); } }
   const tabs = [["todos", "Todas"], ["Pendiente", "Pend."], ["Aprobado", "Aprob."], ["Rechazado", "Rech."]];

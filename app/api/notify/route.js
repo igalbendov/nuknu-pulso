@@ -15,7 +15,7 @@ export async function POST(request) {
 
   let body = {};
   try { body = await request.json(); } catch (e) {}
-  const { title, body: msg, url, excludeName } = body;
+  const { title, body: msg, url, excludeName, onlyNames } = body;
 
   // Traer suscripciones del backend (Apps Script)
   let subs = [];
@@ -33,7 +33,13 @@ export async function POST(request) {
   }
 
   const payload = JSON.stringify({ title: title || "Nuknu Team", body: msg || "", url: url || "/" });
-  const targets = subs.filter((s) => (s.nombre || "").toLowerCase() !== String(excludeName || "").toLowerCase());
+  const only = Array.isArray(onlyNames) && onlyNames.length ? onlyNames.map((n) => String(n).toLowerCase()) : null;
+  const targets = subs.filter((s) => {
+    const nm = (s.nombre || "").toLowerCase();
+    if (nm === String(excludeName || "").toLowerCase()) return false;
+    if (only && only.indexOf(nm) === -1) return false;
+    return true;
+  });
 
   const results = await Promise.allSettled(
     targets.map((s) => {
